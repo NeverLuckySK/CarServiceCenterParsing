@@ -81,6 +81,10 @@ class MainWindow(QMainWindow):
         plugins_action.triggered.connect(self._open_plugin_manager)
         menu.addAction(plugins_action)
 
+        about_action = QAction("О приложении", self)
+        about_action.triggered.connect(self._show_about_dialog)
+        menu.addAction(about_action)
+
     def _load_plugins(self) -> None:
         self._plugins, self._plugin_errors = load_plugins(self._plugin_dir)
         status = f"Плагины: {len(self._plugins)}"
@@ -140,3 +144,11 @@ class MainWindow(QMainWindow):
             self._active_chain_ids = dialog.get_chain_result()
             # Auto-refresh to show changes
             self._refresh_data()
+            
+    def _show_about_dialog(self) -> None:
+        text = (
+            "Автор: Давыдов Андрей Васильевич\n"
+            "Группа: БПИ22-01\n"
+            "Версия приложения: 1.0"
+        )
+        QMessageBox.about(self, "О приложении", text)

@@ -63,8 +63,8 @@ class PluginManagerDialog(QDialog):
         
         # Plugins List Table
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Название", "Тип", "Автор", "Версия", "Дата"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Название", "Версия", "Дата"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -112,7 +112,7 @@ class PluginManagerDialog(QDialog):
                 self._add_chain_item(plugin, checked=False)
 
     def _add_chain_item(self, plugin: PluginBase, checked: bool):
-        item = QListWidgetItem(f"{plugin.name} ({plugin.id})")
+        item = QListWidgetItem(plugin.name)
         item.setData(Qt.ItemDataRole.UserRole, plugin.id)
         item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
         self.chain_list.addItem(item)
@@ -130,10 +130,8 @@ class PluginManagerDialog(QDialog):
         self.table.setRowCount(len(self.plugins))
         for i, plugin in enumerate(self.plugins):
             self.table.setItem(i, 0, QTableWidgetItem(plugin.name))
-            self.table.setItem(i, 1, QTableWidgetItem(plugin.plugin_type))
-            self.table.setItem(i, 2, QTableWidgetItem(plugin.author))
-            self.table.setItem(i, 3, QTableWidgetItem(plugin.version))
-            self.table.setItem(i, 4, QTableWidgetItem(plugin.release_date))
+            self.table.setItem(i, 1, QTableWidgetItem(plugin.version))
+            self.table.setItem(i, 2, QTableWidgetItem(plugin.release_date))
 
     def on_plugin_selected(self, row: int, column: int):
         # Auto-save previous plugin settings before switching
