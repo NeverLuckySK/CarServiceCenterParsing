@@ -33,6 +33,8 @@ class MainWindow(QMainWindow):
 
         self._model = ServiceTableModel()
         self._plugins = []
+        # Store GUIDs of active processors in order
+        self._active_chain_ids: list[str] = []
         self._plugin_errors: list[str] = []
 
         self._table = QTableView()
@@ -102,7 +104,18 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Ошибки загрузки", "\n".join(self._plugin_errors))
 
     def _refresh_data(self) -> None:
-        items, errors = aggregate(self._plugins)
+        # Resolve chain objects
+        processors = []
+        for pid in self._active_chain_ids:
+            p_obj = next((p for p in self._plugins if p.id == pid), None)
+            if p_obj:
+                processors.append(p_obj)
+
+        if self._active_chain_ids and not processors:
+             # Just a safety check if IDs outlived plugins
+             pass
+
+        items, errors = aggregate(self._plugins, processors=processors)
         self._model.set_items(items)
         status = f"Услуг: {len(items)}"
         if errors:
@@ -120,5 +133,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Информация", "Сначала загрузите плагины")
             return
             
-        dialog = PluginManagerDialog(self._plugins, self)
-        dialog.exec()
+        dialog = PluginManagerDialog(self._plugins, self._active_chain_ids, self)
+        if dialog.exec():
+            # Apply new chain
+            self._active_chain_ids = dialog.get_chain_result()
+            # Auto-refresh to show changes
+            self._refresh_data()

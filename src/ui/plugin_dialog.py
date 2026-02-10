@@ -19,6 +19,9 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QWidget,
     QMessageBox,
+    QTabWidget,
+    QListWidget,
+    QListWidgetItem,
 )
 from PyQt6.QtCore import Qt
 
@@ -26,45 +29,102 @@ from core.plugin_base import PluginBase
 
 
 class PluginManagerDialog(QDialog):
-    def __init__(self, plugins: list[PluginBase], parent: QWidget | None = None) -> None:
+    def __init__(self, plugins: list[PluginBase], active_processors: list[str], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Управление плагинами")
         self.resize(800, 600)
         
         self.plugins = plugins
+        self.active_processors_ids = active_processors # List of GUIDs in order
         self.current_plugin: PluginBase | None = None
         
-        self.layout = QVBoxLayout(self)
+        self.layout_main = QVBoxLayout(self)
+        
+        self.tabs = QTabWidget()
+        self.layout_main.addWidget(self.tabs)
+        
+        # TAB 1: General List & Settings
+        self.tab_general = QWidget()
+        self._init_general_tab()
+        self.tabs.addTab(self.tab_general, "Список и Настройки")
 
+        # TAB 2: Process Chain
+        self.tab_chain = QWidget()
+        self._init_chain_tab()
+        self.tabs.addTab(self.tab_chain, "Цепочка обработки")
+        
+        # Close Button
+        self.close_btn = QPushButton("Закрыть и сохранить цепочку")
+        self.close_btn.clicked.connect(self.accept)
+        self.layout_main.addWidget(self.close_btn)
+
+    def _init_general_tab(self):
+        layout = QVBoxLayout(self.tab_general)
+        
         # Plugins List Table
         self.table = QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Название", "Тип", "Автор", "Версия", "Дата релиза"])
+        self.table.setHorizontalHeaderLabels(["Название", "Тип", "Автор", "Версия", "Дата"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.cellClicked.connect(self.on_plugin_selected)
-        self.layout.addWidget(self.table)
+        layout.addWidget(self.table)
         
         self._populate_table()
 
         # Settings Group Box
-        self.settings_group = QGroupBox("Настройки плагина")
+        self.settings_group = QGroupBox("Настройки выбранного плагина")
         self.settings_layout = QFormLayout(self.settings_group)
-        self.layout.addWidget(self.settings_group)
+        layout.addWidget(self.settings_group)
         
-        # Save Button
-        self.save_btn = QPushButton("Применить настройки")
-        self.save_btn.clicked.connect(self.save_settings)
-        self.save_btn.setEnabled(False)
-        self.layout.addWidget(self.save_btn)
-        
-        # Close Button
-        self.close_btn = QPushButton("Закрыть")
-        self.close_btn.clicked.connect(self.accept)
-        self.layout.addWidget(self.close_btn)
+        # Save Settings Button
+        self.save_settings_btn = QPushButton("Применить настройки плагина")
+        self.save_settings_btn.clicked.connect(self.save_settings)
+        self.save_settings_btn.setEnabled(False)
+        layout.addWidget(self.save_settings_btn)
         
         self.settings_inputs: dict[str, QWidget] = {}
+
+    def _init_chain_tab(self):
+        layout = QVBoxLayout(self.tab_chain)
+        
+        layout.addWidget(QLabel("Укажите активные плагины обработки и их порядок:"))
+        
+        self.chain_list = QListWidget()
+        self.chain_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        layout.addWidget(self.chain_list)
+        
+        # Find all processor plugins
+        processors = [p for p in self.plugins if p.plugin_type == "Processor"]
+        
+        # First add those that are already active in the correct order
+        added_ids = set()
+        for pid in self.active_processors_ids:
+            plugin = next((p for p in processors if p.id == pid), None)
+            if plugin:
+                self._add_chain_item(plugin, checked=True)
+                added_ids.add(pid)
+        
+        # Then add the rest as unchecked
+        for plugin in processors:
+            if plugin.id not in added_ids:
+                self._add_chain_item(plugin, checked=False)
+
+    def _add_chain_item(self, plugin: PluginBase, checked: bool):
+        item = QListWidgetItem(f"{plugin.name} ({plugin.id})")
+        item.setData(Qt.ItemDataRole.UserRole, plugin.id)
+        item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
+        self.chain_list.addItem(item)
+    
+    def get_chain_result(self) -> list[str]:
+        """Returns the list of GUIDs for the configured chain."""
+        chain = []
+        for i in range(self.chain_list.count()):
+            item = self.chain_list.item(i)
+            if item.checkState() == Qt.CheckState.Checked:
+                chain.append(item.data(Qt.ItemDataRole.UserRole))
+        return chain
 
     def _populate_table(self):
         self.table.setRowCount(len(self.plugins))
@@ -77,9 +137,9 @@ class PluginManagerDialog(QDialog):
 
     def on_plugin_selected(self, row: int, column: int):
         self.current_plugin = self.plugins[row]
-        self.settings_group.setTitle(f"Настройки: {self.current_plugin.name} (GUID: {self.current_plugin.id})")
+        self.settings_group.setTitle(f"Настройки: {self.current_plugin.name}")
         self._generate_settings_form(self.current_plugin)
-        self.save_btn.setEnabled(True)
+        self.save_settings_btn.setEnabled(True)
 
     def _generate_settings_form(self, plugin: PluginBase):
         # Clear existing layout

@@ -6,11 +6,15 @@ from .models import ServiceItem
 from .plugin_base import PluginBase
 
 
-def aggregate(plugins: Iterable[PluginBase]) -> tuple[list[ServiceItem], list[str]]:
+def aggregate(plugins: Iterable[PluginBase], processors: Iterable[PluginBase] | None = None) -> tuple[list[ServiceItem], list[str]]:
     items: list[ServiceItem] = []
     errors: list[str] = []
 
+    # 1. Load data from Sources
     for plugin in plugins:
+        if plugin.plugin_type != "Source" and plugin.plugin_type != "Parser":
+            continue
+            
         try:
             for raw in plugin.load():
                 item, item_errors = _normalize_item(raw, plugin.name)
@@ -19,6 +23,15 @@ def aggregate(plugins: Iterable[PluginBase]) -> tuple[list[ServiceItem], list[st
                 errors.extend(item_errors)
         except Exception as exc:  # pragma: no cover - defensive
             errors.append(f"{plugin.name}: {exc}")
+
+    # 2. Apply Processing Chain
+    if processors:
+        for proc in processors:
+            try:
+                 # consume the generator to create a list for the next step/final output
+                 items = list(proc.process(items))
+            except Exception as exc:
+                 errors.append(f"Processor {proc.name}: {exc}")
 
     return items, errors
 
