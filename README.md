@@ -1,2 +1,57 @@
 # CarServiceCenterParsing
-The main objectives of the Software Engineering course are to systematize, consolidate, and expand theoretical knowledge in the field, and to apply it to solve data processing tasks. The course also aims to develop the skills necessary to create applications that use dynamic libraries to enhance the basic functionality of the application.
+
+Проект: информационно-агрегационная система по услугам автотехцентров с внешними подключаемыми модулями.
+
+## Возможности
+
+- Десктоп-приложение на PyQt6 для просмотра услуг и цен.
+- Загрузка внешних плагинов из папки `plugins` (динамическая загрузка модулей).
+- Агрегация данных из нескольких источников (плагины возвращают список услуг).
+- Валидация и обработка ошибок при загрузке и агрегации.
+
+## Запуск
+
+1) Установить зависимости:
+
+```bash
+pip install -r requirements.txt
+```
+
+2) Запустить приложение:
+
+```bash
+python -m src.app
+```
+
+## Формат данных услуг
+
+Плагины возвращают элементы в виде `ServiceItem` или словарей со следующими полями:
+
+```json
+{
+	"name": "Название услуги",
+	"price": 1200,
+	"category": "Категория"
+}
+```
+
+## Подключаемые модули
+
+Плагин — это модуль в папке `plugins`. Доступны три варианта регистрации:
+
+1) Функция `get_plugin()` возвращает объект, наследующий `PluginBase`.
+2) Константа `PLUGIN_CLASS`, содержащая класс плагина.
+3) Любой класс, наследующий `PluginBase`.
+
+Пример: [plugins/sample_static.py](plugins/sample_static.py)
+Плагин для парсинга сайта: [plugins/parser_automotul.py](plugins/parser_automotul.py)
+
+## Документация
+
+- Архитектура и диаграммы: [docs/architecture.md](docs/architecture.md)
+
+## Тесты
+
+```bash
+pytest
+```
