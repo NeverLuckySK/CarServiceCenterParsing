@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import QUrl
+from PyQt6.QtCore import QUrl, QModelIndex
 from PyQt6.QtGui import QAction, QDesktopServices
 from PyQt6.QtWidgets import (
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow):
         self._table = QTableView()
         self._table.setModel(self._model)
         self._table.setSortingEnabled(True)
+        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self._table.clicked.connect(self._on_table_clicked)
 
         self._status_label = QLabel("Готово")
         self.statusBar().addWidget(self._status_label)
@@ -53,23 +56,8 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
 
-        toolbar = QHBoxLayout()
-        self._reload_btn = QPushButton("Перезагрузить плагины")
-        self._reload_btn.clicked.connect(self._load_plugins)
-        self._refresh_btn = QPushButton("Обновить данные")
-        self._refresh_btn.clicked.connect(self._refresh_data)
-        self._plugins_btn = QPushButton("Управление плагинами")
-        self._plugins_btn.clicked.connect(self._open_plugin_manager)
-        self._open_btn = QPushButton("Открыть папку плагинов")
-        self._open_btn.clicked.connect(self._open_plugins_folder)
-
-        toolbar.addWidget(self._reload_btn)
-        toolbar.addWidget(self._refresh_btn)
-        toolbar.addWidget(self._plugins_btn)
-        toolbar.addWidget(self._open_btn)
-        toolbar.addStretch()
-
-        layout.addLayout(toolbar)
+        # Removed toolbar buttons as requested
+        
         layout.addWidget(self._table)
 
         self.setCentralWidget(container)
@@ -128,6 +116,19 @@ class MainWindow(QMainWindow):
     def _open_plugins_folder(self) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._plugin_dir)))
         
+    def _on_table_clicked(self, index: QModelIndex) -> None:
+        # Check if "Source" column (index 3) is clicked
+        if index.isValid() and index.column() == 3:
+            # Map index to source model because of sorting
+            source_index = self._table.model().mapToSource(index) if hasattr(self._table.model(), "mapToSource") else index
+            
+            # Since we use simple model without proxy for now:
+            row = index.row()
+            if 0 <= row < len(self._model._items):
+                item = self._model._items[row]
+                if item.url:
+                    QDesktopServices.openUrl(QUrl(item.url))
+
     def _open_plugin_manager(self) -> None:
         if not self._plugins:
             QMessageBox.information(self, "Информация", "Сначала загрузите плагины")

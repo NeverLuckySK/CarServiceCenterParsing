@@ -136,6 +136,10 @@ class PluginManagerDialog(QDialog):
             self.table.setItem(i, 4, QTableWidgetItem(plugin.release_date))
 
     def on_plugin_selected(self, row: int, column: int):
+        # Auto-save previous plugin settings before switching
+        if self.current_plugin and self.settings_inputs:
+            self._apply_settings_internal()
+
         self.current_plugin = self.plugins[row]
         self.settings_group.setTitle(f"Настройки: {self.current_plugin.name}")
         self._generate_settings_form(self.current_plugin)
@@ -180,6 +184,11 @@ class PluginManagerDialog(QDialog):
             self.settings_inputs[key] = widget
 
     def save_settings(self):
+        """Public slot for button click."""
+        self._apply_settings_internal()
+        QMessageBox.information(self, "Успех", "Настройки сохранены!")
+
+    def _apply_settings_internal(self):
         if not self.current_plugin:
             return
 
@@ -193,4 +202,9 @@ class PluginManagerDialog(QDialog):
                 new_settings[key] = widget.text()
         
         self.current_plugin.update_settings(new_settings)
-        QMessageBox.information(self, "Успех", "Настройки обновлены!")
+
+    def accept(self) -> None:
+        # Auto-save current plugin settings on close
+        if self.current_plugin:
+             self._apply_settings_internal()
+        return super().accept()

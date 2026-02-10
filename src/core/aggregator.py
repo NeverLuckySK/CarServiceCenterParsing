@@ -38,6 +38,9 @@ def aggregate(plugins: Iterable[PluginBase], processors: Iterable[PluginBase] | 
 
 def _normalize_item(raw: object, source: str) -> tuple[ServiceItem | None, list[str]]:
     errors: list[str] = []
+    
+    # Pre-check attributes for raw object if it's not dict/ServiceItem but structurally similar? 
+    # Current implementation handles dict and ServiceItem.
 
     if isinstance(raw, ServiceItem):
         item = ServiceItem(
@@ -45,16 +48,19 @@ def _normalize_item(raw: object, source: str) -> tuple[ServiceItem | None, list[
             price=float(raw.price),
             category=raw.category.strip() if raw.category else None,
             source=source,
+            url=raw.url
         )
     elif isinstance(raw, dict):
         name = str(raw.get("name", "")).strip()
         price = raw.get("price", None)
         category = raw.get("category", None)
+        url = raw.get("url", None)
         item = ServiceItem(
             name=name,
             price=float(price) if price is not None else float("nan"),
             category=str(category).strip() if category else None,
             source=source,
+            url=str(url) if url else None
         )
     else:
         errors.append(f"{source}: unsupported item type {type(raw).__name__}")

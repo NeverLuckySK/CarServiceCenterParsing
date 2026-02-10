@@ -28,7 +28,6 @@ class PluginBase(ABC):
         # Initialize default settings
         self.settings = {k: v.get("default") for k, v in self.settings_schema.items()}
 
-    @abstractmethod
     def load(self) -> Iterable[ServiceItem]:
         """Main logic to load data (for Source plugins)."""
         return []

@@ -10,3 +10,4 @@ class ServiceItem:
     price: float
     category: Optional[str]
     source: str
+    url: Optional[str] = None

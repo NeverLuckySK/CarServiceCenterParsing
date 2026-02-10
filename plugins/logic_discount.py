@@ -31,7 +31,8 @@ class DiscountPlugin(PluginBase):
                 name=new_name,
                 price=new_price,
                 category=item.category,
-                source=item.source
+                source=item.source,
+                url=item.url
             )
 
 def get_plugin() -> PluginBase:

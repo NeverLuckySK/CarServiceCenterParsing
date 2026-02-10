@@ -77,7 +77,8 @@ class AutoMotulPlugin(PluginBase):
                         name=name,
                         price=price_val,
                         category=category_name,
-                        source="auto-motul.ru"
+                        source="auto-motul.ru",
+                        url=url
                     ))
         
         return items
