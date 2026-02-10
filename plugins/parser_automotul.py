@@ -8,17 +8,28 @@ from core.models import ServiceItem
 
 
 class AutoMotulPlugin(PluginBase):
+    id = "33333333-3333-3333-3333-333333333333"
     name = "Auto-Motul"
+    plugin_type = "Parser"
+    author = "Copilot"
     version = "1.0"
+    release_date = "2024-02-10"
     description = "Парсинг цен с auto-motul.ru"
-    url = "https://auto-motul.ru/price/"
+    
+    settings_schema = {
+        "url": {"type": "str", "label": "URL источника", "default": "https://auto-motul.ru/price/"},
+        "timeout": {"type": "int", "label": "Таймаут (сек)", "default": 15}
+    }
 
     def load(self):
+        url = self.settings.get("url", "https://auto-motul.ru/price/")
+        timeout = int(self.settings.get("timeout", 15))
+
         # Allow requests to verify SSL certificates, but if it fails on your environment 
         # (some corporate proxies or specific setups), verify=False might be needed debugging.
         # For public sites, verify=True is standard.
         try:
-            response = requests.get(self.url, timeout=15)
+            response = requests.get(url, timeout=timeout)
             response.raise_for_status()
         except Exception as e:
             raise RuntimeError(f"Network error: {e}")

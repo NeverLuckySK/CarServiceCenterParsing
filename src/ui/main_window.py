@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 from core.aggregator import aggregate
 from core.plugin_loader import load_plugins
 from ui.table_model import ServiceTableModel
+from ui.plugin_dialog import PluginManagerDialog
 
 
 class MainWindow(QMainWindow):
@@ -55,11 +56,14 @@ class MainWindow(QMainWindow):
         self._reload_btn.clicked.connect(self._load_plugins)
         self._refresh_btn = QPushButton("Обновить данные")
         self._refresh_btn.clicked.connect(self._refresh_data)
+        self._plugins_btn = QPushButton("Управление плагинами")
+        self._plugins_btn.clicked.connect(self._open_plugin_manager)
         self._open_btn = QPushButton("Открыть папку плагинов")
         self._open_btn.clicked.connect(self._open_plugins_folder)
 
         toolbar.addWidget(self._reload_btn)
         toolbar.addWidget(self._refresh_btn)
+        toolbar.addWidget(self._plugins_btn)
         toolbar.addWidget(self._open_btn)
         toolbar.addStretch()
 
@@ -82,6 +86,10 @@ class MainWindow(QMainWindow):
         menu.addAction(open_plugins_action)
         menu.addAction(reload_action)
         menu.addAction(refresh_action)
+        
+        plugins_action = QAction("Управление плагинами...", self)
+        plugins_action.triggered.connect(self._open_plugin_manager)
+        menu.addAction(plugins_action)
 
     def _load_plugins(self) -> None:
         self._plugins, self._plugin_errors = load_plugins(self._plugin_dir)
@@ -106,3 +114,11 @@ class MainWindow(QMainWindow):
 
     def _open_plugins_folder(self) -> None:
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._plugin_dir)))
+        
+    def _open_plugin_manager(self) -> None:
+        if not self._plugins:
+            QMessageBox.information(self, "Информация", "Сначала загрузите плагины")
+            return
+            
+        dialog = PluginManagerDialog(self._plugins, self)
+        dialog.exec()

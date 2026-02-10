@@ -10,6 +10,7 @@ from .plugin_base import PluginBase
 
 def load_plugins(plugin_dir: Path) -> tuple[list[PluginBase], list[str]]:
     plugins: list[PluginBase] = []
+    loaded_ids: set[str] = set()
     errors: list[str] = []
 
     if not plugin_dir.exists():
@@ -29,6 +30,16 @@ def load_plugins(plugin_dir: Path) -> tuple[list[PluginBase], list[str]]:
             errors.append(f"{plugin_file.name}: no plugin class found")
             continue
 
+        if plugin.id in loaded_ids:
+            errors.append(f"{plugin_file.name}: Duplicate Plugin ID {plugin.id} (already loaded). Skipped.")
+            continue
+        
+        # Simple validation for ID
+        if not plugin.id or plugin.id == "00000000-0000-0000-0000-000000000000":
+             errors.append(f"{plugin_file.name}: Invalid Plugin ID. Skipped.")
+             continue
+
+        loaded_ids.add(plugin.id)
         plugins.append(plugin)
 
     return plugins, errors
