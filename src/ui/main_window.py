@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import QUrl, QModelIndex
+from PyQt6.QtCore import QUrl, QModelIndex, Qt, QSortFilterProxyModel
 from PyQt6.QtGui import QAction, QDesktopServices
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -33,13 +34,18 @@ class MainWindow(QMainWindow):
         self._data_dir = base_dir / "data"
 
         self._model = ServiceTableModel()
+        self._proxy_model = QSortFilterProxyModel()
+        self._proxy_model.setSourceModel(self._model)
+        self._proxy_model.setFilterKeyColumn(-1)
+        self._proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        
         self._plugins = []
         # Store GUIDs of active processors in order
         self._active_chain_ids: list[str] = []
         self._plugin_errors: list[str] = []
 
         self._table = QTableView()
-        self._table.setModel(self._model)
+        self._table.setModel(self._proxy_model)
         self._table.setSortingEnabled(True)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self._table.clicked.connect(self._on_table_clicked)
@@ -56,11 +62,18 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
 
-        # Removed toolbar buttons as requested
+        # Search bar
+        self._search_input = QLineEdit()
+        self._search_input.setPlaceholderText("Поиск услуг...")
+        self._search_input.textChanged.connect(self._on_search_text_changed)
+        layout.addWidget(self._search_input)
         
         layout.addWidget(self._table)
 
         self.setCentralWidget(container)
+
+    def _on_search_text_changed(self, text: str) -> None:
+        self._proxy_model.setFilterRegularExpression(text)
 
     def _init_menu(self) -> None:
         open_plugins_action = QAction("Открыть папку плагинов", self)
@@ -121,17 +134,18 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._plugin_dir)))
         
     def _on_table_clicked(self, index: QModelIndex) -> None:
-        # Check if "Source" column (index 3) is clicked
-        if index.isValid() and index.column() == 3:
-            # Map index to source model because of sorting
-            source_index = self._table.model().mapToSource(index) if hasattr(self._table.model(), "mapToSource") else index
+        if index.isValid():
+            # Map index to source model because of sorting/filtering
+            source_index = self._proxy_model.mapToSource(index)
             
-            # Since we use simple model without proxy for now:
-            row = index.row()
-            if 0 <= row < len(self._model._items):
-                item = self._model._items[row]
-                if item.url:
-                    QDesktopServices.openUrl(QUrl(item.url))
+            # Check if "Source" column (index 3) is clicked
+            # Note: We check the column on the original index as column order is preserved by proxy
+            if source_index.column() == 3:
+                row = source_index.row()
+                if 0 <= row < len(self._model._items):
+                    item = self._model._items[row]
+                    if item.url:
+                        QDesktopServices.openUrl(QUrl(item.url))
 
     def _open_plugin_manager(self) -> None:
         if not self._plugins:
