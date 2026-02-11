@@ -37,6 +37,7 @@ class MainWindow(QMainWindow):
         self._model = ServiceTableModel()
         self._proxy_model = SequentialHeaderProxyModel()
         self._proxy_model.setSourceModel(self._model)
+        self._proxy_model.setSortRole(Qt.ItemDataRole.EditRole) # Use EditRole for sorting (allows numeric sort for prices)
         self._proxy_model.setFilterKeyColumn(-1)
         self._proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         

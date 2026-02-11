@@ -21,20 +21,32 @@ class ServiceTableModel(QAbstractTableModel):
         return len(self.headers)
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
+        if not index.isValid():
             return None
 
         item = self._items[index.row()]
         column = index.column()
 
-        if column == 0:
-            return item.name
-        if column == 1:
-            return item.category or "-"
-        if column == 2:
-            return f"{item.price:.2f}"
-        if column == 3:
-            return item.source
+        if role == Qt.ItemDataRole.DisplayRole:
+            if column == 0:
+                return item.name
+            if column == 1:
+                return item.category or "-"
+            if column == 2:
+                return f"{item.price:.2f}"
+            if column == 3:
+                return item.source
+        
+        # EditRole is commonly used by QSortFilterProxyModel for sorting
+        elif role == Qt.ItemDataRole.EditRole:
+            if column == 0:
+                return item.name
+            if column == 1:
+                return item.category or ""
+            if column == 2:
+                return item.price  # Return raw float for numerical sorting
+            if column == 3:
+                return item.source
 
         return None
 
