@@ -21,6 +21,7 @@ from core.aggregator import aggregate
 from core.plugin_loader import load_plugins
 from ui.table_model import ServiceTableModel
 from ui.plugin_dialog import PluginManagerDialog
+from ui.proxy_model import SequentialHeaderProxyModel
 
 
 class MainWindow(QMainWindow):
@@ -34,7 +35,7 @@ class MainWindow(QMainWindow):
         self._data_dir = base_dir / "data"
 
         self._model = ServiceTableModel()
-        self._proxy_model = QSortFilterProxyModel()
+        self._proxy_model = SequentialHeaderProxyModel()
         self._proxy_model.setSourceModel(self._model)
         self._proxy_model.setFilterKeyColumn(-1)
         self._proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
