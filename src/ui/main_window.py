@@ -36,8 +36,7 @@ class MainWindow(QMainWindow):
         
         # Initialize License Manager
         self._license_manager = LicenseManager(self._data_dir)
-        lic_status = self._license_manager.get_status_text()
-        self.setWindowTitle(f"Агрегатор услуг автотехцентров [{lic_status}]")
+        self.setWindowTitle("Агрегатор услуг автотехцентров")
 
         self.resize(1050, 650)
 
@@ -69,6 +68,11 @@ class MainWindow(QMainWindow):
 
         self._status_label = QLabel("Готово")
         self.statusBar().addWidget(self._status_label)
+        
+        # License status in right corner
+        self._license_status_label = QLabel()
+        self.statusBar().addPermanentWidget(self._license_status_label)
+        self._update_license_display()
 
         self._init_layout()
         self._init_menu()
@@ -124,6 +128,11 @@ class MainWindow(QMainWindow):
             self._min_price_spin.setEnabled(has_license)
         if hasattr(self, '_max_price_spin'):
             self._max_price_spin.setEnabled(has_license)
+        self._update_license_display()
+            
+    def _update_license_display(self) -> None:
+        if hasattr(self, '_license_status_label'):
+            self._license_status_label.setText(self._license_manager.get_status_text())
 
     def _on_search_text_changed(self, text: str) -> None:
         self._proxy_model.setFilterRegularExpression(text)
@@ -260,8 +269,6 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Успех", msg)
                     
                     # Update Window Title
-                    lic_status = self._license_manager.get_status_text()
-                    self.setWindowTitle(f"Агрегатор услуг автотехцентров [{lic_status}]")
                     self._update_ui_state()
                 else:
                     QMessageBox.warning(self, "Ошибка", "Ключ принят, но лицензия недействительна (возможно истек срок).")
