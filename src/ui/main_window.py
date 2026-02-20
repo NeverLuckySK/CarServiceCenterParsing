@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QWidget,
+    QInputDialog,
 )
 
 from core.aggregator import aggregate
@@ -145,6 +146,11 @@ class MainWindow(QMainWindow):
         menu.addAction(plugins_action)
 
         item_help = self.menuBar().addMenu("Справка")
+        
+        activate_action = QAction("Активация", self)
+        activate_action.triggered.connect(self._show_activation_dialog)
+        item_help.addAction(activate_action)
+        
         about_action = QAction("О приложении", self)
         about_action.triggered.connect(self._show_about_dialog)
         item_help.addAction(about_action)
@@ -224,3 +230,21 @@ class MainWindow(QMainWindow):
             "Версия приложения: 1.0"
         )
         QMessageBox.about(self, "О приложении", text)
+
+    def _show_activation_dialog(self) -> None:
+        text, ok = QInputDialog.getText(self, "Активация", "Введите ключ активации:")
+        if ok and text:
+            success = self._license_manager.activate(text)
+            if success:
+                lic = self._license_manager.check_license()
+                if lic:
+                    msg = f"Активация успешна!\nВладелец: {lic.get('owner')}\nДо: {lic.get('end_date')}"
+                    QMessageBox.information(self, "Успех", msg)
+                    
+                    # Update Window Title
+                    lic_status = self._license_manager.get_status_text()
+                    self.setWindowTitle(f"Агрегатор услуг автотехцентров [{lic_status}]")
+                else:
+                    QMessageBox.warning(self, "Ошибка", "Ключ принят, но лицензия недействительна (возможно истек срок).")
+            else:
+                QMessageBox.warning(self, "Ошибка", "Неверный ключ активации.")
