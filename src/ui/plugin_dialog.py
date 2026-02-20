@@ -63,8 +63,8 @@ class PluginManagerDialog(QDialog):
         
         # Plugins List Table
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Название", "Версия", "Дата"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["Название", "Версия", "Дата", "Автор"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -132,6 +132,7 @@ class PluginManagerDialog(QDialog):
             self.table.setItem(i, 0, QTableWidgetItem(plugin.name))
             self.table.setItem(i, 1, QTableWidgetItem(plugin.version))
             self.table.setItem(i, 2, QTableWidgetItem(plugin.release_date))
+            self.table.setItem(i, 3, QTableWidgetItem(plugin.author))
 
     def on_plugin_selected(self, row: int, column: int):
         # Auto-save previous plugin settings before switching

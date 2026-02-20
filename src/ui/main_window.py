@@ -56,7 +56,15 @@ class MainWindow(QMainWindow):
         self._table = QTableView()
         self._table.setModel(self._proxy_model)
         self._table.setSortingEnabled(True)
-        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        
+        # Configure Header to fill space
+        header = self._table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive) # Allow user resizing
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch) # Name stretches
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents) # Category fits content
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents) # Price fits content
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents) # Source fits content
+        
         self._table.clicked.connect(self._on_table_clicked)
 
         self._status_label = QLabel("Готово")
@@ -102,10 +110,20 @@ class MainWindow(QMainWindow):
         self._max_price_spin.valueChanged.connect(self._on_max_price_changed)
         filters_layout.addWidget(self._max_price_spin)
 
+        # Initial state based on license
+        self._update_ui_state()
+
         layout.addLayout(filters_layout)
         layout.addWidget(self._table)
 
         self.setCentralWidget(container)
+
+    def _update_ui_state(self) -> None:
+        has_license = self._license_manager.check_license() is not None
+        if hasattr(self, '_min_price_spin'):
+            self._min_price_spin.setEnabled(has_license)
+        if hasattr(self, '_max_price_spin'):
+            self._max_price_spin.setEnabled(has_license)
 
     def _on_search_text_changed(self, text: str) -> None:
         self._proxy_model.setFilterRegularExpression(text)
@@ -244,6 +262,7 @@ class MainWindow(QMainWindow):
                     # Update Window Title
                     lic_status = self._license_manager.get_status_text()
                     self.setWindowTitle(f"Агрегатор услуг автотехцентров [{lic_status}]")
+                    self._update_ui_state()
                 else:
                     QMessageBox.warning(self, "Ошибка", "Ключ принят, но лицензия недействительна (возможно истек срок).")
             else:
