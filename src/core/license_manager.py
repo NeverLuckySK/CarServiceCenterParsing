@@ -40,8 +40,9 @@ class LicenseManager:
                 if not start_str or not end_str:
                     return False
                 today = date.today()
-                start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+                # Parse DD.MM.YYYY
+                start_date = datetime.strptime(start_str, "%d.%m.%Y").date()
+                end_date = datetime.strptime(end_str, "%d.%m.%Y").date()
                 return start_date <= today <= end_date
             except (ValueError, TypeError):
                 return False
@@ -106,8 +107,9 @@ class LicenseManager:
                 if not start_str or not end_str:
                     return False
                 today = date.today()
-                start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+                # Parse DD.MM.YYYY
+                start_date = datetime.strptime(start_str, "%d.%m.%Y").date()
+                end_date = datetime.strptime(end_str, "%d.%m.%Y").date()
                 return start_date <= today <= end_date
             except (ValueError, TypeError):
                 return False
@@ -128,5 +130,6 @@ class LicenseManager:
     def get_status_text(self) -> str:
         lic = self.check_license()
         if lic:
+            # Already DD.MM.YYYY in file
             return f"{lic.get('owner', 'Unknown')} (до {lic.get('end_date')})"
-        return "Free Version (Unregistered)"
+        return "Бесплатная версия (не зарегистрировано)"

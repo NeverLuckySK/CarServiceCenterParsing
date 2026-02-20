@@ -131,7 +131,18 @@ class PluginManagerDialog(QDialog):
         for i, plugin in enumerate(self.plugins):
             self.table.setItem(i, 0, QTableWidgetItem(plugin.name))
             self.table.setItem(i, 1, QTableWidgetItem(plugin.version))
-            self.table.setItem(i, 2, QTableWidgetItem(plugin.release_date))
+            
+            # Format Date
+            date_str = plugin.release_date
+            try:
+                # Try parsing if YYYY-MM-DD
+                from datetime import datetime
+                d = datetime.strptime(date_str, "%Y-%m-%d")
+                date_str = d.strftime("%d.%m.%Y")
+            except (ValueError, TypeError, ImportError):
+                pass
+                
+            self.table.setItem(i, 2, QTableWidgetItem(date_str))
             self.table.setItem(i, 3, QTableWidgetItem(plugin.author))
 
     def on_plugin_selected(self, row: int, column: int):
