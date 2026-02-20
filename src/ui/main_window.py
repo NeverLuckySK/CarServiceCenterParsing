@@ -5,6 +5,7 @@ from pathlib import Path
 from PyQt6.QtCore import QUrl, QModelIndex, Qt, QSortFilterProxyModel
 from PyQt6.QtGui import QAction, QDesktopServices
 from PyQt6.QtWidgets import (
+    QDoubleSpinBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -19,6 +20,7 @@ from PyQt6.QtWidgets import (
 
 from core.aggregator import aggregate
 from core.plugin_loader import load_plugins
+from core.license_manager import LicenseManager
 from ui.table_model import ServiceTableModel
 from ui.plugin_dialog import PluginManagerDialog
 from ui.proxy_model import SequentialHeaderProxyModel
@@ -27,12 +29,16 @@ from ui.proxy_model import SequentialHeaderProxyModel
 class MainWindow(QMainWindow):
     def __init__(self, base_dir: Path) -> None:
         super().__init__()
-        self.setWindowTitle("Агрегатор услуг автотехцентров")
-        self.resize(980, 620)
-
         self._base_dir = base_dir
         self._plugin_dir = base_dir / "plugins"
         self._data_dir = base_dir / "data"
+        
+        # Initialize License Manager
+        self._license_manager = LicenseManager(self._data_dir)
+        lic_status = self._license_manager.get_status_text()
+        self.setWindowTitle(f"Агрегатор услуг автотехцентров [{lic_status}]")
+
+        self.resize(1050, 650)
 
         self._model = ServiceTableModel()
         self._proxy_model = SequentialHeaderProxyModel()
@@ -64,12 +70,38 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
 
+        # Filters layout (Search + Price)
+        filters_layout = QHBoxLayout()
+
         # Search bar
         self._search_input = QLineEdit()
         self._search_input.setPlaceholderText("Поиск услуг...")
         self._search_input.textChanged.connect(self._on_search_text_changed)
-        layout.addWidget(self._search_input)
+        filters_layout.addWidget(self._search_input, stretch=2)
         
+        # Price filters
+        filters_layout.addSpacing(10)
+        filters_layout.addWidget(QLabel("Цена от:"))
+        
+        self._min_price_spin = QDoubleSpinBox()
+        self._min_price_spin.setRange(0, 10_000_000)
+        self._min_price_spin.setValue(0)
+        self._min_price_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self._min_price_spin.setFixedWidth(80)
+        self._min_price_spin.valueChanged.connect(self._on_min_price_changed)
+        filters_layout.addWidget(self._min_price_spin)
+
+        filters_layout.addWidget(QLabel("до:"))
+
+        self._max_price_spin = QDoubleSpinBox()
+        self._max_price_spin.setRange(0, 10_000_000)
+        self._max_price_spin.setValue(10_000_000) # Default to max
+        self._max_price_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self._max_price_spin.setFixedWidth(80)
+        self._max_price_spin.valueChanged.connect(self._on_max_price_changed)
+        filters_layout.addWidget(self._max_price_spin)
+
+        layout.addLayout(filters_layout)
         layout.addWidget(self._table)
 
         self.setCentralWidget(container)
@@ -77,7 +109,23 @@ class MainWindow(QMainWindow):
     def _on_search_text_changed(self, text: str) -> None:
         self._proxy_model.setFilterRegularExpression(text)
 
+    def _on_min_price_changed(self, val: float) -> None:
+        self._proxy_model.setMinPrice(val)
+
+    def _on_max_price_changed(self, val: float) -> None:
+        # If value is maximum configured range, treat as infinite? 
+        # Or just use the value. 10 million is effectively infinite for car services.
+        self._proxy_model.setMaxPrice(val)
+
+
     def _init_menu(self) -> None:
+        # File Menu
+        file_menu = self.menuBar().addMenu("Файл")
+        exit_action = QAction("Выход", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # Plugins Menu
         open_plugins_action = QAction("Открыть папку плагинов", self)
         open_plugins_action.triggered.connect(self._open_plugins_folder)
 
@@ -87,7 +135,7 @@ class MainWindow(QMainWindow):
         refresh_action = QAction("Обновить данные", self)
         refresh_action.triggered.connect(self._refresh_data)
 
-        menu = self.menuBar().addMenu("Действия")
+        menu = self.menuBar().addMenu("Плагины")
         menu.addAction(open_plugins_action)
         menu.addAction(reload_action)
         menu.addAction(refresh_action)
@@ -96,9 +144,10 @@ class MainWindow(QMainWindow):
         plugins_action.triggered.connect(self._open_plugin_manager)
         menu.addAction(plugins_action)
 
+        item_help = self.menuBar().addMenu("Справка")
         about_action = QAction("О приложении", self)
         about_action.triggered.connect(self._show_about_dialog)
-        menu.addAction(about_action)
+        item_help.addAction(about_action)
 
     def _load_plugins(self) -> None:
         self._plugins, self._plugin_errors = load_plugins(self._plugin_dir)
@@ -150,6 +199,13 @@ class MainWindow(QMainWindow):
                         QDesktopServices.openUrl(QUrl(item.url))
 
     def _open_plugin_manager(self) -> None:
+        # Check License
+        if not self._license_manager.check_license():
+            QMessageBox.warning(self, "Ограничение бесплатной версии", 
+                              "Управление плагинами доступно только в полной версии.\n"
+                              "Пожалуйста, приобретите лицензию.")
+            return
+
         if not self._plugins:
             QMessageBox.information(self, "Информация", "Сначала загрузите плагины")
             return
