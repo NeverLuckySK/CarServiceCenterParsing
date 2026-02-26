@@ -8,12 +8,12 @@ from core.models import ServiceItem
 
 
 class AutoMotulPlugin(PluginBase):
-    id = "33333333-3333-3333-3333-333333333333"
+    id = "8E90A1D0-9EAA-4511-832F-ACC715F55740"
     name = "Auto-Motul"
     plugin_type = "Parser"
-    author = "Copilot"
+    author = "Andrey Davydov"
     version = "1.0"
-    release_date = "2024-02-10"
+    release_date = "03.01.2026"
     description = "Парсинг цен с auto-motul.ru"
     
     settings_schema = {

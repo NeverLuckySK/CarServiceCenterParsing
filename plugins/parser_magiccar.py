@@ -11,8 +11,9 @@ class MagicCarParser(PluginBase):
     id = "550e8400-e29b-41d4-a716-446655449999"
     name = "Magic Car 24"
     plugin_type = "Source"
-    author = "Copilot"
-    version = "1.0.0"
+    author = "Andrey Davydov"
+    version = "1.0"
+    release_date = "03.01.2026"
     description = "Парсер услуг с сайта magic-car24.ru"
     
     settings_schema = {

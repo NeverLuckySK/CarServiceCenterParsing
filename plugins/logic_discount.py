@@ -5,7 +5,7 @@ from core.plugin_base import PluginBase
 
 
 class DiscountPlugin(PluginBase):
-    id = "55555555-5555-5555-5555-555555555555"
+    id = "58DD7F6F-B3F0-4332-8F43-BDF65F6DD974"
     name = "Скидка/Наценка"
     plugin_type = "Processor"
     author = "Marketing Dept"

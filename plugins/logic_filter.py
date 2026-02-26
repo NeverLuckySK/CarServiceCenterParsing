@@ -5,7 +5,7 @@ from core.plugin_base import PluginBase
 
 
 class PriceFilterPlugin(PluginBase):
-    id = "44444444-4444-4444-4444-444444444444"
+    id = "594D33F0-3791-4253-94CD-65DA98DD3BD6"
     name = "Фильтр цен"
     plugin_type = "Processor"
     author = "Internal"
