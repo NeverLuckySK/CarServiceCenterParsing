@@ -6,42 +6,45 @@ from pathlib import Path
 # Handle frozen executable mode (PyInstaller)
 if getattr(sys, 'frozen', False):
     # Running as a bundle (executable)
-    # The application is running from the directory where the exe is located
-    base_dir = Path(sys.executable).parent
+    exe_dir = Path(sys.executable).parent
+    base_dir = exe_dir
+
+    # Fix: Ensure `core` and `ui` are importable from ANYWHERE they landed.
+    # PyInstaller usually puts modules in valid path, but directory structure might be flat.
+    # We add `exe_dir` (root of OneDir) and `exe_dir/src` (if preserved).
+    if str(exe_dir) not in sys.path:
+        sys.path.insert(0, str(exe_dir))
     
-    # In frozen mode, PyInstaller unpacks temporary files to sys._MEIPASS
-    # or keeps them in the dist folder.
-    # We need to make sure Python can find 'ui' and 'core' modules.
-    # Usually, if we use 'onedir' mode, imports work relatively.
-    # But if we use 'onefile', they are in MEIPASS.
-    # For 'onedir', the modules are often compiled into `base_library.zip` or `src` folder.
-    
-    # Let's ensure 'src' is importable if it was included in datas
-    # Or simply add current directory to path
-    if str(base_dir) not in sys.path:
-        sys.path.insert(0, str(base_dir))
-        
+    src_check = exe_dir / "src"
+    if src_check.exists() and str(src_check) not in sys.path:
+        sys.path.insert(0, str(src_check))
+
 else:
     # Running from source script
     base_dir = Path(__file__).resolve().parent.parent
 
-src_dir = base_dir / "src"
-if str(src_dir) not in sys.path:
-    sys.path.insert(0, str(src_dir))
+# Force add 'src' folder itself to path for both cases
+# This is critical for imports like `from core.models import ...` working inside `ui.main_window`
+current_file_dir = Path(__file__).parent
+if str(current_file_dir) not in sys.path:
+    # Use insert(0) to prioritize local modules over site-packages
+    sys.path.insert(0, str(current_file_dir))
 
 from PyQt6.QtWidgets import QApplication
 
-# Try importing directly first (standard)
+# Now try imports. 
+# We need 'core' and 'ui' to take precedence.
 try:
+    # Attempt 1: If 'src' is in path (it is now), `import ui` should work
     from ui.main_window import MainWindow
 except ImportError:
-    # Fallback: maybe 'src.ui' if packaged differently or path issue
     try:
+        # Attempt 2: If structure is `src.ui`, try that
         from src.ui.main_window import MainWindow
     except ImportError:
-         # Last resort: add directory of this file (src folder) to path
-        sys.path.append(str(Path(__file__).parent))
-        from ui.main_window import MainWindow
+        # Attempt 3: If running from root without src package context (rare)
+        import ui.main_window
+        MainWindow = ui.main_window.MainWindow
 
 
 def main() -> int:
