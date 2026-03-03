@@ -26,6 +26,14 @@
    "value": "src"
   },
   {
+   "optionDest": "hiddenimports",
+   "value": "requests"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "bs4"
+  },
+  {
    "optionDest": "datas",
    "value": "plugins;plugins"
   },
