@@ -35,14 +35,34 @@ from PyQt6.QtWidgets import QApplication
 # Now try imports. 
 # We need 'core' and 'ui' to take precedence.
 try:
-    # Attempt 1: If 'src' is in path (it is now), `import ui` should work
+    # Attempt 1: Standard relative import if we are in expected environment
     from ui.main_window import MainWindow
 except ImportError:
     try:
-        # Attempt 2: If structure is `src.ui`, try that
+        # Attempt 2: If inside 'src' package structure (often happens in PyInstaller onefile/onedir)
+        # We need to expose 'core' and 'ui' as top-level modules
+        import src.core
+        import src.ui
+        sys.modules["core"] = src.core
+        sys.modules["ui"] = src.ui
+        
+        # Also need submodules for direct 'from core.aggregator' imports inside ui
+        from src.core import aggregator, plugin_loader, license_manager, models, plugin_base
+        sys.modules["core.aggregator"] = aggregator
+        sys.modules["core.plugin_loader"] = plugin_loader
+        sys.modules["core.license_manager"] = license_manager
+        sys.modules["core.models"] = models
+        sys.modules["core.plugin_base"] = plugin_base
+        
+        from src.ui import main_window, table_model, plugin_dialog, proxy_model
+        sys.modules["ui.main_window"] = main_window
+        sys.modules["ui.table_model"] = table_model
+        sys.modules["ui.plugin_dialog"] = plugin_dialog
+        sys.modules["ui.proxy_model"] = proxy_model
+
         from src.ui.main_window import MainWindow
     except ImportError:
-        # Attempt 3: If running from root without src package context (rare)
+        # Attempt 3: Direct file import hack (Last Resort)
         import ui.main_window
         MainWindow = ui.main_window.MainWindow
 
