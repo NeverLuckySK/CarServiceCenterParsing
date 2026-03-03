@@ -95,7 +95,12 @@ class MainWindow(QMainWindow):
         
         # Price filters
         filters_layout.addSpacing(10)
-        filters_layout.addWidget(QLabel("Цена от:"))
+        
+        self._price_filter_widget = QWidget()
+        price_layout = QHBoxLayout(self._price_filter_widget)
+        price_layout.setContentsMargins(0, 0, 0, 0)
+        
+        price_layout.addWidget(QLabel("Цена от:"))
         
         self._min_price_spin = QDoubleSpinBox()
         self._min_price_spin.setRange(0, 10_000_000)
@@ -103,9 +108,9 @@ class MainWindow(QMainWindow):
         self._min_price_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         self._min_price_spin.setFixedWidth(80)
         self._min_price_spin.valueChanged.connect(self._on_min_price_changed)
-        filters_layout.addWidget(self._min_price_spin)
+        price_layout.addWidget(self._min_price_spin)
 
-        filters_layout.addWidget(QLabel("до:"))
+        price_layout.addWidget(QLabel("до:"))
 
         self._max_price_spin = QDoubleSpinBox()
         self._max_price_spin.setRange(0, 10_000_000)
@@ -113,7 +118,9 @@ class MainWindow(QMainWindow):
         self._max_price_spin.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         self._max_price_spin.setFixedWidth(80)
         self._max_price_spin.valueChanged.connect(self._on_max_price_changed)
-        filters_layout.addWidget(self._max_price_spin)
+        price_layout.addWidget(self._max_price_spin)
+        
+        filters_layout.addWidget(self._price_filter_widget)
 
         # Initial state based on license
         self._update_ui_state()
@@ -125,10 +132,22 @@ class MainWindow(QMainWindow):
 
     def _update_ui_state(self) -> None:
         has_license = self._license_manager.check_license() is not None
-        if hasattr(self, '_min_price_spin'):
-            self._min_price_spin.setEnabled(has_license)
-        if hasattr(self, '_max_price_spin'):
-            self._max_price_spin.setEnabled(has_license)
+        
+        # Check if Price Filter Plugin is active
+        # ID from plugins/logic_filter.py
+        PRICE_FILTER_ID = "594D33F0-3791-4253-94CD-65DA98DD3BD6"
+        is_plugin_active = PRICE_FILTER_ID in self._active_chain_ids
+        
+        if hasattr(self, '_price_filter_widget'):
+            # Only show if licensed AND plugin is active
+            visible = has_license and is_plugin_active
+            self._price_filter_widget.setVisible(visible)
+            
+            # Reset filter if hidden
+            if not visible:
+                if hasattr(self, '_min_price_spin'): self._min_price_spin.setValue(0)
+                if hasattr(self, '_max_price_spin'): self._max_price_spin.setValue(10_000_000)
+
         self._update_license_display()
             
     def _update_license_display(self) -> None:
@@ -248,6 +267,8 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             # Apply new chain
             self._active_chain_ids = dialog.get_chain_result()
+            # Update UI state for plugin-dependent controls
+            self._update_ui_state()
             # Auto-refresh to show changes
             self._refresh_data()
             

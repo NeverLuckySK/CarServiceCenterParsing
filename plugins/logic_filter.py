@@ -13,18 +13,15 @@ class PriceFilterPlugin(PluginBase):
     release_date = "2024-02-12"
     description = "Фильтрация услуг по диапазону цен"
 
-    settings_schema = {
-        "min_price": {"type": "float", "label": "Мин. цена", "default": 0.0},
-        "max_price": {"type": "float", "label": "Макс. цена", "default": 10000.0},
-    }
+    # Settings are now controlled via the Main Window UI when this plugin is active.
+    # We keep an empty schema or remove it to avoid confusion in the settings dialog.
+    settings_schema = {}
 
     def process(self, items):
-        min_p = float(self.settings.get("min_price", 0.0))
-        max_p = float(self.settings.get("max_price", 10000.0))
-        
-        for item in items:
-            if min_p <= item.price <= max_p:
-                yield item
+        # This plugin enables the UI filter in the main window.
+        # Ideally, it should not filter data here to avoid conflict/double filtering.
+        # The actual filtering happens via the ProxyModel controlled by the UI.
+        yield from items
 
 def get_plugin() -> PluginBase:
     return PriceFilterPlugin()
